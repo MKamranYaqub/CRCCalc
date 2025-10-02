@@ -757,14 +757,34 @@ const clearFilters = () => {
 document.addEventListener("DOMContentLoaded", () => {
     const btnFilter = byId("btnFilter");
     const btnClear = byId("btnClear");
+    const results = byId("results");
 
+    // Helper: show placeholder message
+    const showPlaceholder = () => {
+        results.innerHTML = `<p class="muted" style="padding:10px 0;">Please select required questions and click "Search".</p>`;
+        byId("rowcount").textContent = "";
+    };
+
+    // --- Search button ---
     btnFilter.addEventListener("click", () => {
         const filteredData = filterData();
         updateTable(filteredData);
     });
 
-    btnClear.addEventListener("click", clearFilters);
+    // --- Clear button ---
+    btnClear.addEventListener("click", () => {
+        byId("riskRating").value = "";
+        byId("sof").value = "";
+        byId("shortfall").value = "";
+        byId("timeSince").value = "";
+        byId("casetype").value = "";
+        btnFilter.disabled = false;
 
-    // Run a full update on load (show all data initially)
-    updateTable(ACTIONLOGIC); 
+        // Instead of showing all data, show placeholder
+        showPlaceholder();
+    });
+
+    // --- On page load: show placeholder only ---
+    showPlaceholder();
 });
+
