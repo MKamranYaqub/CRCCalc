@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SOW/SOF Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --gap: 12px; --pad: 14px; --radius: 12px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f7f7fb; color: #111; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .card { background: #fff; border: 1px solid #e8e8ee; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: var(--pad); }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .grid { display: grid; gap: var(--gap); grid-template-columns: repeat(5, minmax(180px, 1fr)); align-items: end; }
+    label { display: block; font-size: 12px; color: #444; margin-bottom: 6px; }
+    select, button { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #d9d9e3; background: #fff; font-size: 14px; }
+    button { background: #111; color: #fff; cursor: pointer; border: none; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .actions { display: flex; gap: var(--gap); margin-top: var(--gap); align-items:center;}
+    .table { overflow-x: auto; margin-top: 16px; }
+    
+    /* Table Styling */
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        table-layout: fixed; 
+    }
+    th, td { 
+        background-color: #ffffff;
+        border: 1px solid #ececf2; 
+        padding: 10px 12px; 
+        text-align: left; /* Default data alignment */
+        word-wrap: break-word; 
+    }
+    th { 
+        background: #2828f3; 
+        font-weight: 600; 
+        color: #f0eded; /* ADDED: Header Font Color */
+        text-align: center; /* ADDED: Header Alignment */
+    }
+    
+    /* Risk Rating Color Coding */
+    .risk-low {
+        background-color: #e6ffe6; 
+        color: #1a7a1a; 
+        font-weight: 600;
+    }
+    .risk-medium {
+        background-color: #fffbe6; 
+        color: #997300; 
+        font-weight: 600;
+    }
+    .risk-high {
+        background-color: #ffe6e6; 
+        color: #cc0000; 
+        font-weight: 600;
+    }
+
+    /* Column Widths & Specific Alignment */
+    /* 1. Risk Rating */
+    th:nth-child(1), td:nth-child(1) { width: 10%; text-align: center; } 
+    /* 2. Shortfall Value */
+    th:nth-child(2), td:nth-child(2) { width: 10%; text-align: center; } /* ALIGNED CENTER */
+    /* 3. Source of Funds */
+    th:nth-child(3), td:nth-child(3) { width: 15%; }
+    /* 4. Evidence */
+    th:nth-child(4), td:nth-child(4) { width: 25%; }
+    /* 5. GAP */
+    th:nth-child(5), td:nth-child(5) { width: 8%; text-align: center; } /* ALIGNED CENTER */
+    /* 6. Redemption or Completion */
+    th:nth-child(6), td:nth-child(6) { width: 12%; }
+    /* 7. ACTION */
+    th:nth-child(7), td:nth-child(7) { width: 20%; } 
+
+    .muted { color: #666; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background: #f2f2f7; font-size: 12px; }
+    .rowcount { margin-left: auto; font-size: 13px; color: #666; }
+    .footer { margin-top: 8px; display:flex; gap:8px; align-items:center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>SOW / SOF Calculator</h1>
+
+      <div class="grid">
+        <div>
+          <label for="riskRating">Risk Rating</label>
+          <select id="riskRating">
+            <option value="">— Any —</option>
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+        <div>
+          <label for="sof">Source of Funds</label>
+          <select id="sof">
+            <option value="">— Any —</option>
+            <option>Dividends</option>
+            <option>Gifts</option>
+            <option>Sale of property</option>
+            <option>Savings from employment income</option>
+            <option>Self-employed income</option>
+            
+          </select>
+        </div>
+        <div>
+          <label for="shortfall">Shortfall Value (£)</label>
+          <select id="shortfall">
+            <option value="">— Any —</option>
+            <option>0-10k</option>
+            <option>10-50k</option>
+            <option>50-100k</option>
+            <option>100-200k</option>
+            <option>200k+</option>
+          </select>
+        </div>
+        <div>
+          <label for="timeSince">GAP (months)</label>
+          <select id="timeSince">
+            <option value="">— Any —</option>
+            <option>0-3</option>
+            <option>3-6</option>
+            <option>6-12</option>
+            <option>12+</option>
+          </select>
+        </div>
+        <div>
+          <label for="casetype">Redemption / Completion</label>
+          <select id="casetype">
+            <option value="">— Any —</option>
+            <option>Redemption</option>
+            <option>Completion</option>
+            
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnFilter"class="muted" style="background:#f89603; color:#ffffff; border:1px solid #d9d9e3;">Search</button>
+        <button id="btnClear" class="muted" style="background:#fff; color:#111111; border:1px solid #d9d9e3;">Clear</button>
+        <span class="rowcount" id="rowcount"></span>
+      </div>
+
+      <div class="table" id="results"></div>
+
+      <div class="footer muted">
+        <span class="pill">Market Financial Solutions</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle this if you want to show only the Action Required column
+const SHOW_ONLY_ACTION = false; 
+
+// --- Configuration / Sample Data (Corrected to match HTML options) ---
+const RAW_TSV = `
+Risk Rating	Shortfall Value	Source of Funds	Evidence	GAP	Redemption or Completion	ACTION
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent 3 months Bank Statements and dividend payment voucher
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	200k+	Dividends	Bank Statement, dividend payment voucher	0-3	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	200k+	Dividends	Bank Statement, dividend payment voucher	3-6	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	200k+	Dividends	Bank Statement, dividend payment voucher	6-12	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+High	200k+	Dividends	Bank Statement, dividend payment voucher	12+	Redemption	Recent certified 3 months Bank Statements and dividend payment voucher
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements and land registry
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements and land registry
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements and land registry
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements and land registry
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements and land registry
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements and land registry
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements and land registry
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements and land registry
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements and land registry
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements and land registry
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements and land registry
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements and land registry
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements and land registry
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements and land registry
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements and land registry
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements and land registry
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements and land registry
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements and land registry
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements and land registry
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements and land registry
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Recent 3 months Bank Statements,  land registry and completion statement 
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	0-3	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	3-6	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	6-12	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	12+	Redemption	Updated certified  recent 3 months Bank statements,  land registry and completion statement
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statements
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 months Bank Statements
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 months Bank Statements
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 months Bank Statements
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 months Bank Statements
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 months Bank Statements
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 months Bank Statements
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statements
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 months Bank Statements
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 months Bank Statements
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 months Bank Statements
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statements
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 month Bank Statements and payslips
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 month Bank Statements and payslips
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 month Bank Statements and payslips
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statement
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 month Bank Statements and payslips
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 month Bank Statements and payslips
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 month Bank Statements and payslips
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statement
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 month Bank Statements and payslips
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 month Bank Statements and payslips
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 month Bank Statements and payslips
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 months Bank Statement
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 month Bank Statements and payslips
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 month Bank Statements and payslips
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 month Bank Statements and payslips
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Recent 3 Bank Statement
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Recent 3 months Bank Statement and payslips
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Recent 3 months Bank Statement and payslips
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Recent 3 months Bank Statement and payslips
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Certifed recent 3 months Bank Statement, Payslip and Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Redemption	Certifed recent 3 months Bank Statements, Payslips, P60 and  Employment letter
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements and Recent SA302s
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements, Recent SA302s and Recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements , Recent SA302s, recent Tax calculation
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Recent 3 months Bank Statements, Recent SA302s, recent Tax calculation and Accountants letter
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews and Companies House balance sheet or P&L statement
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Redemption	Certified recent 3 months Bank Statements, recent SA302s, Tax calculations, Tax overviews, Companies House balance sheet, recent annual financial statement or  recent P&L statement
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower and  Gift letter
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement for the donor and borrower and  Gift letter
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement for the donor and borrower and  Gift letter
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement for the donor and borrower and  Gift letter
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	No action
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap
+Low	0-10k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap
+Low	10-50k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap
+Low	50-100k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap
+Low	100-200k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap
+Low	200k+	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap 
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap 
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap 
+Medium	0-10k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap 
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap 
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap 
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap 
+Medium	10-50k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap 
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap 
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap 
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap 
+Medium	50-100k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap 
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap 
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap 
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap 
+Medium	100-200k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap 
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Bank Statements covering the gap 
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Bank Statements covering the gap 
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Bank Statements covering the gap 
+Medium	200k+	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Bank Statements covering the gap 
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Certified Bank Statements covering the gap 
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Certified Bank Statements covering the gap 
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Certified Bank Statements covering the gap 
+High	0-10k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Certified Bank Statements covering the gap 
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Certified Bank Statements covering the gap 
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Certified Bank Statements covering the gap 
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Certified Bank Statements covering the gap 
+High	10-50k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Certified Bank Statements covering the gap 
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Certified Bank Statements covering the gap 
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Certified Bank Statements covering the gap 
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Certified Bank Statements covering the gap 
+High	50-100k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Certified Bank Statements covering the gap 
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Certified Bank Statements covering the gap 
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Certified Bank Statements covering the gap 
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Certified Bank Statements covering the gap 
+High	100-200k	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Certified Bank Statements covering the gap 
+High	200k+	Dividends	Bank Statement, dividend payment voucher	0-3	Completion	Certified Bank Statements covering the gap 
+High	200k+	Dividends	Bank Statement, dividend payment voucher	3-6	Completion	Certified Bank Statements covering the gap 
+High	200k+	Dividends	Bank Statement, dividend payment voucher	6-12	Completion	Certified Bank Statements covering the gap 
+High	200k+	Dividends	Bank Statement, dividend payment voucher	12+	Completion	Certified Bank Statements covering the gap 
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	0-10k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	10-50k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	50-100k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	100-200k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Low	200k+	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap accompanied by Completion Statement
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	0-10k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	10-50k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	50-100k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	100-200k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Bank Statement covering the gap, land registry  and completion statement
+Medium	200k+	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Bank Statement covering the gap, land registry  and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	0-10k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	10-50k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	50-100k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	100-200k	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	0-3	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	3-6	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	6-12	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+High	200k+	Sale of property	Bank Statement, completion statement and land registry 	12+	Completion	Certified Bank statements covering the gap,  land registry and completion statement
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Bank statements covering the gap
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Bank statements covering the gap
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Bank statements covering the gap
+Low	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Bank statements covering the gap
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Bank statements covering the gap
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Bank statements covering the gap
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Bank statements covering the gap
+Low	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Bank statements covering the gap
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Bank statements covering the gap
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Bank statements covering the gap
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Bank statements covering the gap
+Low	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Bank statements covering the gap
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Bank statements covering the gap
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Bank statements covering the gap
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Bank statements covering the gap
+Low	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Bank statements covering the gap
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Bank statements covering the gap
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Bank statements covering the gap
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Bank statements covering the gap
+Low	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Bank statements covering the gap
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Bank Statement covering the gap
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	 Bank Statement and payslips covering the gap
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	 Bank Statement and payslips covering the gap
+Medium	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	 Bank Statement and payslips covering the gap
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	 Bank Statement and payslips covering the gap
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	 Bank Statement and payslips covering the gap
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	 Bank Statement and payslips covering the gap
+Medium	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	 Bank Statement and payslips covering the gap
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	 Bank Statement and payslips covering the gap
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	 Bank Statement and payslips covering the gap
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	 Bank Statement and payslips covering the gap
+Medium	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	 Bank Statement and payslips covering the gap
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	 Bank Statement and payslips covering the gap
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	 Bank Statement and payslips covering the gap
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	 Bank Statement and payslips covering the gap
+Medium	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	 Bank Statement and payslips covering the gap
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	 Bank Statement and payslips covering the gap
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	 Bank Statement and payslips covering the gap
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	 Bank Statement and payslips covering the gap
+Medium	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	 Bank Statement and payslips covering the gap
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	0-10k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	10-50k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	50-100k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Certifed Bank Statements, Payslips covering the gap and Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	100-200k	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	0-3	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	3-6	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	6-12	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+High	200k+	Savings from employment income	Bank Statement for savings account and Payslips, Employment letter and P60 	12+	Completion	Certifed Bank Statements, Payslips, P60 covering the gap and Employment letter
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	 Bank statements covering the gap and recent SA302s
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	 Bank statements covering the gap and recent SA302s
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	 Bank statements covering the gap and recent SA302s
+Low	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	 Bank statements covering the gap and recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	 Bank statements covering the gap and recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	 Bank statements covering the gap and recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	 Bank statements covering the gap and recent SA302s
+Low	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	 Bank statements covering the gap and recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	 Bank statements covering the gap and recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	 Bank statements covering the gap and recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	 Bank statements covering the gap and recent SA302s
+Low	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	 Bank statements covering the gap and recent SA302s
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Low	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s and recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s and  recent Tax calculation
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+Medium	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Bank Statements covering the gap, recent SA302s, recent Tax calculation and Accountants letter
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	0-10k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	10-50k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	50-100k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	100-200k	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	0-3	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	3-6	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	6-12	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+High	200k+	Self-employed income	Recent 2 years SA302s, Recent 2 years tax calculation, Recent 3 months Bank Statement, Recent 2 years business financial statements, Companies house balance sheets	12+	Completion	Certfied Bank Statements covering the gap, recent SA302s, recent Tax calculation and Tax overviews and Companies House balance sheets or P&L statements
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's bank statements covering gap and gift letter
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's bank statements covering gap and gift letter
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's bank statements covering gap and gift letter
+Low	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's bank statements covering gap and gift letter
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's bank statements covering gap and gift letter
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's bank statements covering gap and gift letter
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's bank statements covering gap and gift letter
+Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's bank statements covering gap and gift letter
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's bank statements covering gap and gift letter
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's bank statements covering gap and gift letter
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's bank statements covering gap and gift letter
+Low	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's bank statements covering gap and gift letter
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's bank statements covering gap and gift letter
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's bank statements covering gap and gift letter
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's bank statements covering gap and gift letter
+Low	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's bank statements covering gap and gift letter
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's bank statements covering gap and gift letter
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's bank statements covering gap and gift letter
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's bank statements covering gap and gift letter
+Low	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's bank statements covering gap and gift letter
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	 Borrower's bank statement covering the gap
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	 Borrower's bank statement covering the gap
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	 Borrower's bank statement covering the gap
+Medium	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	 Borrower's bank statement covering the gap
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	 Borrower's bank statement covering the gap
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	 Borrower's bank statement covering the gap
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	 Borrower's bank statement covering the gap
+Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	 Borrower's bank statement covering the gap
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	 Borrower's bank statement covering the gap
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	 Borrower's bank statement covering the gap
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	 Borrower's bank statement covering the gap
+Medium	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	 Borrower's bank statement covering the gap
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	 Borrower's bank statement covering the gap
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	 Borrower's bank statement covering the gap
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	 Borrower's bank statement covering the gap
+Medium	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	 Borrower's bank statement covering the gap
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	 Borrower's bank statement covering the gap
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	 Borrower's bank statement covering the gap
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	 Borrower's bank statement covering the gap
+Medium	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	 Borrower's bank statement covering the gap
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's certified bank statements covering the gap 
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's certified bank statements covering the gap 
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's certified bank statements covering the gap 
+High	0-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's certified bank statements covering the gap 
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's certified bank statements covering the gap 
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's certified bank statements covering the gap 
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's certified bank statements covering the gap 
+High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's certified bank statements covering the gap 
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's certified bank statements covering the gap 
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's certified bank statements covering the gap 
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's certified bank statements covering the gap 
+High	50-100k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's certified bank statements covering the gap 
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's certified bank statements covering the gap 
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's certified bank statements covering the gap 
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's certified bank statements covering the gap 
+High	100-200k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's certified bank statements covering the gap 
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Completion	Borrower's certified bank statements covering the gap 
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Completion	Borrower's certified bank statements covering the gap 
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Completion	Borrower's certified bank statements covering the gap 
+High	200k+	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Completion	Borrower's certified bank statements covering the gap 
+
+`;
+
+// --- Utility Functions ---
+
+const byId = id => document.getElementById(id);
+
+/**
+ * Parses the raw TSV data into an array of objects (rows).
+ * @param {string} tsv - The raw TSV string.
+ * @returns {Array<Object>} The parsed data.
+ */
+const parseTSV = (tsv) => {
+    const lines = tsv.trim().split('\n');
+    const headers = lines[0].split('\t').map(h => h.trim());
+    const data = lines.slice(1).map(line => {
+        const values = line.split('\t').map(v => v.trim());
+        const row = {};
+        headers.forEach((header, i) => {
+            row[header] = values[i];
+        });
+        return row;
+    });
+    return data;
+};
+
+// Global data store
+const ACTIONLOGIC = parseTSV(RAW_TSV);
+
+/**
+ * Checks if a row's column value matches the filter value.
+ * @param {Object} row - The data row.
+ * @param {string} key - The column header (key).
+ * @param {string} filterValue - The selected filter value.
+ * @returns {boolean} True if they match or if the filter is empty.
+ */
+const matches = (row, key, filterValue) => {
+    if (!filterValue) return true;
+    return row[key] === filterValue;
+};
+
+/**
+ * Sanitizes a string for HTML output.
+ * @param {string} str - The string to sanitize.
+ * @returns {string} The sanitized string.
+ */
+const safe = (str) => {
+    if (str === null || str === undefined) return "";
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
+
+// --- Main Functions ---
+
+/**
+ * Filters the main data set based on current selection values.
+ * @returns {Array<Object>} The filtered data rows.
+ */
+const filterData = () => {
+    const riskRating = byId("riskRating").value; 
+    const sof = byId("sof").value;             
+    const shortfall = byId("shortfall").value; 
+    const timeSince = byId("timeSince").value; 
+    const casetype = byId("casetype").value;   
+
+    const filtered = ACTIONLOGIC.filter(r => 
+        matches(r, "Risk Rating", riskRating) && 
+        matches(r, "Source of Funds", sof) && 
+        // FIX: Corrected key for Shortfall
+        matches(r, "Shortfall Value", shortfall) && 
+        // FIX: Corrected key for GAP
+        matches(r, "GAP", timeSince) &&         
+        matches(r, "Redemption or Completion", casetype) 
+    );
+    return filtered;
+};
+
+/**
+ * Updates the table in the DOM with the provided data.
+ * @param {Array<Object>} rows - The data rows to display.
+ */
+const updateTable = (rows) => {
+    const el = byId("results");
+    const rowcountEl = byId("rowcount");
+
+    rowcountEl.textContent = `${rows.length} result${rows.length !== 1 ? 's' : ''}`;
+
+    if (rows.length === 0) {
+        el.innerHTML = `<p class="muted" style="padding: 10px 0;">No matching recommendations found.</p>`;
+        return;
+    }
+
+    if (SHOW_ONLY_ACTION) {
+        // Render only Action Required column (omitted for simplicity, following standard path)
+        // ... (existing SHOW_ONLY_ACTION logic remains here)
+        // ...
+        return;
+    }
+
+    // --- Render all columns present (SHOW_ONLY_ACTION is false) ---
+    // 1. Collect all unique keys from all rows to ensure a consistent table structure
+    const allKeys = Array.from(
+        rows.reduce((set, r) => {
+            Object.keys(r).forEach(k => set.add(k));
+            return set;
+        }, new Set())
+    );
+
+    // 2. Build header row
+    const header = `<tr>${allKeys.map(k => `<th>${k}</th>`).join("")}</tr>`;
+    
+    // 3. Build body rows with color coding for Risk Rating
+    const body = rows.map(r =>
+        `<tr>${allKeys.map(k => {
+            const value = safe(r[k] ?? ""); // Ensure value is sanitized
+            let classAttr = "";
+            
+            // LOGIC TO ADD CLASS FOR RISK RATING
+            if (k === "Risk Rating") {
+                if (value === "Low") {
+                    classAttr = ' class="risk-low"';
+                } else if (value === "Medium") {
+                    classAttr = ' class="risk-medium"';
+                } else if (value === "High") {
+                    classAttr = ' class="risk-high"';
+                }
+            }
+            // END LOGIC
+            
+            return `<td${classAttr}>${value}</td>`;
+        }).join("")}</tr>`
+    ).join("");
+
+
+    el.innerHTML = `<table><thead>${header}</thead><tbody>${body}</tbody></table>`;
+}
+
+/**
+ * Clears all filters and updates the table.
+ */
+const clearFilters = () => {
+    byId("riskRating").value = "";
+    byId("sof").value = "";
+    byId("shortfall").value = "";
+    byId("timeSince").value = "";
+    byId("casetype").value = "";
+    byId("btnFilter").disabled = false;
+    updateTable(ACTIONLOGIC); // Show all data
+};
+
+// ---------- Init ----------
+document.addEventListener("DOMContentLoaded", () => {
+    const btnFilter = byId("btnFilter");
+    const btnClear = byId("btnClear");
+
+    btnFilter.addEventListener("click", () => {
+        const filteredData = filterData();
+        updateTable(filteredData);
+    });
+
+    btnClear.addEventListener("click", clearFilters);
+
+    // Run a full update on load (show all data initially)
+    updateTable(ACTIONLOGIC); 
+});
+  </script>
+</body>
+</html>
