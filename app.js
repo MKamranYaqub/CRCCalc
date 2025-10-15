@@ -609,7 +609,7 @@ Low	0-5k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redem
 Low	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
 Low	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
 Low	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
-Low	5-10k	Self-employed income	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
+Low	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
 Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
 Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
 Low	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 month Bank Statement  for the donor and borrower, Gift letter and SOW confirmation from the donor
@@ -633,7 +633,7 @@ Medium	0-5k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Re
 Medium	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower and  Gift letter
 Medium	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
 Medium	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
-Medium	5-10k	Self-employed income	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
+Medium	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Recent 3 months Bank Statement  for the donor and borrower and  Gift letter
 Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
 Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
 Medium	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Recent 3 months Bank Statement for the donor and borrower, Gift letter and SOW confirmation from the donor
@@ -657,7 +657,7 @@ High	0-5k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Rede
 High	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
 High	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
 High	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
-High	5-10k	Self-employed income	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
+High	5-10k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	12+	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
 High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	0-3	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
 High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	3-6	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
 High	10-50k	Gifts	Recent Bank Statement, Gift letter and SOW confirmation	6-12	Redemption	Certified Gift letter, recent 3 months Bank statement from the borrower and donor and  SOW  confirmation from donor
