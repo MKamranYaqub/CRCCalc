@@ -1202,11 +1202,6 @@ High	200k+	Liquidation of investment	Bank statements for traders account and Ban
 High	200k+	Liquidation of investment	Bank statements for traders account and Bank statement for borrower account showing receipt of investment funds	3-6	Completion	Certified borrowers bank statements covering the gap and showing the receipt of invetsment funds and 3 months certified trading accounts showing the surrender of investement funds
 High	200k+	Liquidation of investment	Bank statements for traders account and Bank statement for borrower account showing receipt of investment funds	6-12	Completion	Certified borrowers bank statements covering the gap and showing the receipt of invetsment funds and 3 months certified trading accounts showing the surrender of investement funds
 High	200k+	Liquidation of investment	Bank statements for traders account and Bank statement for borrower account showing receipt of investment funds	12+	Completion	Certified borrowers bank statements covering the gap and showing the receipt of invetsment funds and 3 months certified trading accounts showing the surrender of investement funds
-Low	0-5k	Loan Interest	Bank Statement showing interest received	0-3	Redemption	Recent 3 months Bank Statements
-Low	0-5k	Rental Income	Tenancy Agreement and Bank Statement	0-3	Redemption	Recent 3 months Bank Statements
-Low	0-5k	Company Sale	Sale Agreement and Bank Statement	0-3	Redemption	Recent 3 months Bank Statements
-Low	0-5k	Liquidation of Investment	Investment liquidation statement and Bank Statement	0-3	Redemption	Recent 3 months Bank Statements
-
 `;
 
 // --- Utility Functions ---
